@@ -1,0 +1,155 @@
+/* Trigger — looks like a closed combobox field. */
+.combobox {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 40px;
+  padding: 4px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #111827;
+  font: inherit;
+  font-size: 0.875rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* Backdrop — covers the viewport behind the tray. */
+.trayOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: rgba(15, 23, 42, 0.5);
+}
+
+/* Tray — bottom sheet. `dvh` so iOS Safari's keyboard doesn't push the
+   sheet off-screen the way `vh` would. */
+.tray {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  max-height: 90dvh;
+  height: 100%;
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 -4px 16px rgba(15, 23, 42, 0.16);
+  outline: none;
+  overflow: hidden;
+}
+
+/* Inner stack. Flex column so the listbox can grow and scroll. */
+.trayDialog {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100%;
+  max-height: inherit;
+  padding: 16px;
+  outline: none;
+}
+
+.trayHeading {
+  margin: 0;
+  font-size: 1.25rem;
+  color: #111827;
+}
+
+/* Wrapper — positions the clear button on the right of the input.
+   We avoid `type="search"` (inconsistent native clear button) and ship
+   our own xmark inside this wrapper. */
+.inputWrapper {
+  position: relative;
+  width: 100%;
+}
+
+/* `padding-right` reserves room for the clear button so the caret never
+   collides with the icon. */
+.input {
+  width: 100%;
+  height: 40px;
+  padding: 4px 40px 4px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #111827;
+  font: inherit;
+  font-size: 0.875rem;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.input::placeholder {
+  color: #9ca3af;
+}
+
+.input:focus-visible {
+  border-color: #2563eb;
+}
+
+.clearButton {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  min-height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: #4b5563;
+  cursor: pointer;
+}
+
+.clearButton:hover {
+  background: #f3f4f6;
+}
+
+.listBox {
+  flex: 1;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  outline: none;
+  overflow-y: auto;
+}
+
+.listBox [data-rac][role='option'] {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  border-bottom: 1px solid #f3f4f6;
+  font-size: 0.9375rem;
+  color: #111827;
+  cursor: pointer;
+}
+
+.listBox [data-rac][role='option'][data-selected] {
+  font-weight: 600;
+}
+
+.listBox [data-rac][role='option'][data-focused] {
+  background: #eff6ff;
+}
+
+.bottomLink {
+  display: flex;
+  flex: none;
+  align-items: center;
+  padding: 12px;
+  border-top: 1px solid #e5e7eb;
+  background: #ffffff;
+  color: #2563eb;
+  font-size: 0.875rem;
+  text-decoration: underline;
+}
+
+.bottomLink:hover {
+  color: #1d4ed8;
+}
