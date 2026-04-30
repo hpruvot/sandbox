@@ -1,0 +1,112 @@
+name: Deploy POCs to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Build every POC
+        env:
+          REPO: ${{ github.event.repository.name }}
+        run: |
+          set -euo pipefail
+          mkdir -p _site
+
+          # Each top-level folder with a package.json is treated as a POC and
+          # built into _site/<folder>/, served at /<repo>/<folder>/.
+          for pkg in $(find . -maxdepth 2 -mindepth 2 -name package.json -not -path './node_modules/*' | sort); do
+            dir=$(dirname "$pkg")
+            name=$(basename "$dir")
+            echo "::group::Build $name"
+            (
+              cd "$dir"
+              npm ci
+              BASE_PATH="/$REPO/$name/" npm run build
+            )
+            mkdir -p "_site/$name"
+            cp -R "$dir/dist/." "_site/$name/"
+            echo "::endgroup::"
+          done
+
+      - name: Generate landing page
+        run: |
+          set -euo pipefail
+          links=""
+          for dir in _site/*/; do
+            name=$(basename "$dir")
+            links="$links<li><a href=\"./$name/\">$name</a></li>"
+          done
+          cat > _site/index.html <<HTML
+          <!DOCTYPE html>
+          <html lang="en">
+            <head>
+              <meta charset="UTF-8" />
+              <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+              <title>Sandbox</title>
+              <style>
+                body {
+                  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                  max-width: 640px;
+                  margin: 64px auto;
+                  padding: 0 24px;
+                  color: #111827;
+                  background: #f9fafb;
+                }
+                h1 { margin: 0 0 8px; font-weight: 700; letter-spacing: -0.02em; }
+                p { color: #4b5563; margin: 0 0 32px; }
+                ul { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+                li a {
+                  display: block;
+                  padding: 16px 20px;
+                  background: #fff;
+                  border: 1px solid #e5e7eb;
+                  border-radius: 12px;
+                  color: #111827;
+                  text-decoration: none;
+                  font-weight: 500;
+                }
+                li a:hover { border-color: #2563eb; color: #2563eb; }
+              </style>
+            </head>
+            <body>
+              <h1>Sandbox</h1>
+              <p>Standalone proofs-of-concept.</p>
+              <ul>$links</ul>
+            </body>
+          </html>
+          HTML
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
