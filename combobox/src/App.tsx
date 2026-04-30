@@ -139,28 +139,30 @@ const ItemActionsDemo = () => {
   const [created, setCreated] = useState<string[]>([])
   const [selected, setSelected] = useState<Key | null>(null)
 
+  // Show the create option as a regular item — selecting it both creates and
+  // selects in one click, no separate "now click the new entry" step.
+  const trimmed = inputValue.trim()
+  const showCreate = trimmed.length > 0 && !created.includes(trimmed)
+
   return (
     <>
       <Combobox
         allowsEmptyCollection
         inputValue={inputValue}
         label='Favorite animal'
-        onChange={setSelected}
+        onChange={(key) => {
+          if (typeof key === 'string' && key === trimmed && !created.includes(key)) {
+            setCreated((c) => [...c, key])
+          }
+          setSelected(key)
+        }}
         onInputChange={setInputValue}
         placeholder='Type to filter or create…'
         value={selected}
       >
-        {inputValue.length > 0 && (
-          <ComboboxItem
-            id='__create__'
-            onAction={() => {
-              setCreated((c) => (c.includes(inputValue) ? c : [...c, inputValue]))
-              setSelected(inputValue)
-              setInputValue(inputValue)
-            }}
-            textValue={inputValue}
-          >
-            {`Create "${inputValue}"`}
+        {showCreate && (
+          <ComboboxItem id={trimmed} textValue={trimmed}>
+            {`Create "${trimmed}"`}
           </ComboboxItem>
         )}
         {animals.map((a) => (
@@ -169,7 +171,7 @@ const ItemActionsDemo = () => {
           </ComboboxItem>
         ))}
         {created.map((name) => (
-          <ComboboxItem key={`new-${name}`} id={name}>
+          <ComboboxItem key={name} id={name}>
             {name}
           </ComboboxItem>
         ))}

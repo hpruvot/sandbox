@@ -112,10 +112,12 @@ export const Combobox = forwardRef<HTMLInputElement, ComboboxProps>((props, ref)
   const listboxId = `${id}-listbox`
   const ariaDescribedBy = computeAriaDescribedBy({ hint, message, id })
 
-  // Track inputValue locally for the clear button. By default we don't push it
-  // back to AriaComboBox — controlling inputValue on RAC breaks Escape's native
-  // revert when selectedKey is also controlled. Consumers who need controlled
-  // input (e.g. the item-actions pattern) opt in via the `inputValue` prop.
+  // Always control inputValue on AriaComboBox so the clear button actually
+  // clears the input. Consumers can override by passing their own inputValue
+  // (e.g. the item-actions pattern) — we then defer to theirs but still mirror
+  // every change in our local state.
+  // Seed from `defaultValue` first, then `value`, so a freshly mounted
+  // controlled combobox displays the matching option text.
   const [inputValue, setInputValue] = useState(
     () =>
       consumerInputValue ?? findOptionText(children, defaultValue ?? value ?? undefined) ?? '',
@@ -197,6 +199,7 @@ export const Combobox = forwardRef<HTMLInputElement, ComboboxProps>((props, ref)
           [styles.isDisabled]: isDisabled,
           [styles.isError]: state === 'error',
         })}
+        inputValue={consumerInputValue ?? inputValue}
         isDisabled={isDisabled}
         isInvalid={state === 'error'}
         isRequired={isRequired}
@@ -204,7 +207,6 @@ export const Combobox = forwardRef<HTMLInputElement, ComboboxProps>((props, ref)
         {...(value !== undefined && { selectedKey: value })}
         {...(defaultValue !== undefined && { defaultSelectedKey: defaultValue })}
         {...(onChange !== undefined && { onSelectionChange: onChange })}
-        {...(consumerInputValue !== undefined && { inputValue: consumerInputValue })}
         {...comboBoxProps}
         onOpenChange={handleOpenChange}
       >
