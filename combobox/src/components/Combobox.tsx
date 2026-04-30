@@ -21,7 +21,6 @@ import {
   isValidElement,
   type MutableRefObject,
   type ReactNode,
-  useEffect,
   useId,
   useLayoutEffect,
   useRef,
@@ -131,17 +130,16 @@ export const Combobox = forwardRef<HTMLInputElement, ComboboxProps>((props, ref)
 
   // When `selectedKey` is controlled, RAC fires `onSelectionChange` but does
   // NOT push the new option's text through `onInputChange` — it expects the
-  // consumer to keep `inputValue` in sync with `selectedKey`. Without this
-  // effect, clicking an option updates the consumer's selected state but the
-  // input stays on the previous text. Skip when inputValue is consumer-controlled.
-  useEffect(() => {
-    if (value === undefined) return
-    if (consumerInputValue !== undefined) return
-    setInputValue(findOptionText(children, value ?? undefined) ?? '')
-    // children intentionally excluded — re-resolving on every children change
-    // would clobber what the user is typing.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value, consumerInputValue])
+  // consumer to keep `inputValue` in sync. Sync inside the same handler so
+  // RAC processes the selection close together with the input update; doing
+  // it in a useEffect would re-render and RAC's `menuTrigger='input'` would
+  // re-open the popover.
+  const handleSelectionChange = (key: Key | null) => {
+    if (consumerInputValue === undefined) {
+      setInputValue(findOptionText(children, key ?? undefined) ?? '')
+    }
+    onChange?.(key)
+  }
   const [isOpen, setIsOpen] = useState(false)
   const innerInputRef = useRef<HTMLInputElement | null>(null)
   const bottomLinkRef = useRef<HTMLAnchorElement | null>(null)
@@ -221,7 +219,9 @@ export const Combobox = forwardRef<HTMLInputElement, ComboboxProps>((props, ref)
         onInputChange={handleInputChange}
         {...(value !== undefined && { selectedKey: value })}
         {...(defaultValue !== undefined && { defaultSelectedKey: defaultValue })}
-        {...(onChange !== undefined && { onSelectionChange: onChange })}
+        {...((onChange !== undefined || value !== undefined) && {
+          onSelectionChange: handleSelectionChange,
+        })}
         {...comboBoxProps}
         onOpenChange={handleOpenChange}
       >
