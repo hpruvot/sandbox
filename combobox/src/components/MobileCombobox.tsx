@@ -96,10 +96,11 @@ export const MobileCombobox = ({
     return () => clearTimeout(id)
   }, [totalCount, isOpen, query])
 
-  // VoiceOver does not reliably follow `autoFocus` into a freshly-mounted
-  // modal — the virtual cursor stays on the trigger. Schedule the focus call
-  // after RAC's FocusScope settles so VO registers the modal first, then
-  // follows DOM focus into the input.
+  // `autoFocus` on the input handles the synchronous case (sighted users —
+  // focus appears in the input as soon as the tray mounts). VoiceOver doesn't
+  // follow that synthetic focus reliably though — its virtual cursor stays on
+  // the trigger. Re-focus once the modal has settled so VO registers the
+  // dialog context first, then follows DOM focus into the input.
   useEffect(() => {
     if (!isOpen) return
     const id = setTimeout(() => {
@@ -148,8 +149,10 @@ export const MobileCombobox = ({
               {label}
             </AriaHeading>
             <div className={styles.inputWrapper}>
+              {/* eslint-disable-next-line jsx-a11y/no-autofocus */}
               <input
                 aria-label={label}
+                autoFocus
                 className={styles.input}
                 onChange={(event) => handleQueryChange(event.target.value)}
                 ref={inputRef}
