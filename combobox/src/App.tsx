@@ -134,15 +134,20 @@ export const App = () => {
   )
 }
 
+const CREATE_ITEM_ID = '__create__'
+
 const ItemActionsDemo = () => {
   const [inputValue, setInputValue] = useState('')
   const [created, setCreated] = useState<string[]>([])
   const [selected, setSelected] = useState<Key | null>(null)
 
-  // Show the create option as a regular item — selecting it both creates and
-  // selects in one click, no separate "now click the new entry" step.
+  // Stable id for the create entry — RAC throws "Cannot change the id of an
+  // item" if we use the typed value as the id (it changes on every keystroke).
+  // We resolve the typed value back inside onChange.
   const trimmed = inputValue.trim()
-  const showCreate = trimmed.length > 0 && !created.includes(trimmed)
+  const isExisting =
+    animals.some((a) => a.id === trimmed) || created.includes(trimmed)
+  const showCreate = trimmed.length > 0 && !isExisting
 
   return (
     <>
@@ -151,8 +156,10 @@ const ItemActionsDemo = () => {
         inputValue={inputValue}
         label='Favorite animal'
         onChange={(key) => {
-          if (typeof key === 'string' && key === trimmed && !created.includes(key)) {
-            setCreated((c) => [...c, key])
+          if (key === CREATE_ITEM_ID) {
+            setCreated((c) => (c.includes(trimmed) ? c : [...c, trimmed]))
+            setSelected(trimmed)
+            return
           }
           setSelected(key)
         }}
@@ -161,7 +168,7 @@ const ItemActionsDemo = () => {
         value={selected}
       >
         {showCreate && (
-          <ComboboxItem id={trimmed} textValue={trimmed}>
+          <ComboboxItem id={CREATE_ITEM_ID} textValue={trimmed}>
             {`Create "${trimmed}"`}
           </ComboboxItem>
         )}
