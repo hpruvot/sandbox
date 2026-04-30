@@ -111,31 +111,65 @@
   background: #f3f4f6;
 }
 
-.listBox {
+.listScroll {
   flex: 1;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  outline: none;
   overflow-y: auto;
 }
 
-.listBox [data-rac][role='option'] {
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.itemButton {
   display: flex;
   align-items: center;
+  width: 100%;
   padding: 12px;
+  border: none;
   border-bottom: 1px solid #f3f4f6;
-  font-size: 0.9375rem;
+  background: transparent;
   color: #111827;
+  font: inherit;
+  font-size: 0.9375rem;
+  text-align: left;
   cursor: pointer;
 }
 
-.listBox [data-rac][role='option'][data-selected] {
+.itemButton:hover {
+  background: #eff6ff;
+}
+
+.itemButton:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: -2px;
+}
+
+.itemButton.isSelected {
   font-weight: 600;
 }
 
-.listBox [data-rac][role='option'][data-focused] {
-  background: #eff6ff;
+.sectionHeader {
+  margin: 0;
+  padding: 8px 12px 4px;
+  color: #6b7280;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  border: 0;
+  clip: rect(0, 0, 0, 0);
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 .bottomLink {

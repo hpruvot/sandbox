@@ -103,6 +103,8 @@ export const Combobox = forwardRef<HTMLInputElement, ComboboxProps>((props, ref)
     onChange,
     children,
     bottomLink,
+    inputValue: consumerInputValue,
+    onInputChange: consumerOnInputChange,
     ...comboBoxProps
   } = props
 
@@ -110,10 +112,19 @@ export const Combobox = forwardRef<HTMLInputElement, ComboboxProps>((props, ref)
   const listboxId = `${id}-listbox`
   const ariaDescribedBy = computeAriaDescribedBy({ hint, message, id })
 
-  // Seed the controlled inputValue from the option matching `defaultValue`.
-  // RAC's `useComboBoxState` skips the initial input/key sync when the consumer
-  // controls inputValue, so we resolve the option text ourselves on mount.
-  const [inputValue, setInputValue] = useState(() => findOptionText(children, defaultValue) ?? '')
+  // Track inputValue locally for the clear button. By default we don't push it
+  // back to AriaComboBox — controlling inputValue on RAC breaks Escape's native
+  // revert when selectedKey is also controlled. Consumers who need controlled
+  // input (e.g. the item-actions pattern) opt in via the `inputValue` prop.
+  const [inputValue, setInputValue] = useState(
+    () =>
+      consumerInputValue ?? findOptionText(children, defaultValue ?? value ?? undefined) ?? '',
+  )
+
+  const handleInputChange = (next: string) => {
+    setInputValue(next)
+    consumerOnInputChange?.(next)
+  }
   const [isOpen, setIsOpen] = useState(false)
   const innerInputRef = useRef<HTMLInputElement | null>(null)
   const bottomLinkRef = useRef<HTMLAnchorElement | null>(null)
@@ -186,14 +197,14 @@ export const Combobox = forwardRef<HTMLInputElement, ComboboxProps>((props, ref)
           [styles.isDisabled]: isDisabled,
           [styles.isError]: state === 'error',
         })}
-        inputValue={inputValue}
         isDisabled={isDisabled}
         isInvalid={state === 'error'}
         isRequired={isRequired}
-        onInputChange={setInputValue}
+        onInputChange={handleInputChange}
         {...(value !== undefined && { selectedKey: value })}
         {...(defaultValue !== undefined && { defaultSelectedKey: defaultValue })}
         {...(onChange !== undefined && { onSelectionChange: onChange })}
+        {...(consumerInputValue !== undefined && { inputValue: consumerInputValue })}
         {...comboBoxProps}
         onOpenChange={handleOpenChange}
       >

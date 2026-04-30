@@ -125,8 +125,59 @@ export const App = () => {
             ))}
           </Combobox>
         </Demo>
+
+        <Demo title='8. Item actions — create from typed value'>
+          <ItemActionsDemo />
+        </Demo>
       </section>
     </main>
+  )
+}
+
+const ItemActionsDemo = () => {
+  const [inputValue, setInputValue] = useState('')
+  const [created, setCreated] = useState<string[]>([])
+  const [selected, setSelected] = useState<Key | null>(null)
+
+  return (
+    <>
+      <Combobox
+        allowsEmptyCollection
+        inputValue={inputValue}
+        label='Favorite animal'
+        onChange={setSelected}
+        onInputChange={setInputValue}
+        placeholder='Type to filter or create…'
+        value={selected}
+      >
+        {inputValue.length > 0 && (
+          <ComboboxItem
+            id='__create__'
+            onAction={() => {
+              setCreated((c) => (c.includes(inputValue) ? c : [...c, inputValue]))
+              setSelected(inputValue)
+              setInputValue(inputValue)
+            }}
+            textValue={inputValue}
+          >
+            {`Create "${inputValue}"`}
+          </ComboboxItem>
+        )}
+        {animals.map((a) => (
+          <ComboboxItem key={a.id} id={a.id}>
+            {a.name}
+          </ComboboxItem>
+        ))}
+        {created.map((name) => (
+          <ComboboxItem key={`new-${name}`} id={name}>
+            {name}
+          </ComboboxItem>
+        ))}
+      </Combobox>
+      <p className={styles.value}>
+        Selected: <code>{selected == null ? 'none' : String(selected)}</code>
+      </p>
+    </>
   )
 }
 
