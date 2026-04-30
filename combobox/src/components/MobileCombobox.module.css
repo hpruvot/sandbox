@@ -15,6 +15,13 @@
   cursor: pointer;
 }
 
+.combobox.isDisabled {
+  cursor: not-allowed;
+  color: #9ca3af;
+  border-color: #e5e7eb;
+  background-color: #f3f4f6;
+}
+
 /* Backdrop — covers the viewport behind the tray. */
 .trayOverlay {
   position: fixed;

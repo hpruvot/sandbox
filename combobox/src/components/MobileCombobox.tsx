@@ -36,6 +36,8 @@ export type MobileComboboxProps = {
   bottomLink?: { label: string; href: string }
   /** Mirrors the desktop API — fired as the user types into the search input. */
   onInputChange?: (value: string) => void
+  /** When true, the trigger is unclickable and the tray cannot be opened. */
+  isDisabled?: boolean
 }
 
 type FlatItem = { id: Key; label: string; onAction?: () => void }
@@ -56,6 +58,7 @@ export const MobileCombobox = ({
   children,
   bottomLink,
   onInputChange,
+  isDisabled = false,
 }: MobileComboboxProps) => {
   const [isOpen, setIsOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -131,8 +134,11 @@ export const MobileCombobox = ({
   }
 
   return (
-    <AriaDialogTrigger isOpen={isOpen} onOpenChange={setIsOpen}>
-      <AriaButton className={classNames(styles.combobox)}>
+    <AriaDialogTrigger isOpen={isOpen && !isDisabled} onOpenChange={setIsOpen}>
+      <AriaButton
+        className={classNames(styles.combobox, { [styles.isDisabled]: isDisabled })}
+        isDisabled={isDisabled}
+      >
         {selectedLabel ?? placeholder ?? ''}
       </AriaButton>
       <AriaModalOverlay className={styles.trayOverlay} isDismissable>
