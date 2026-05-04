@@ -194,3 +194,9 @@
   letter-spacing: 0.05em;
   pointer-events: none;
 }
+
+.emptyState {
+  padding: 8px 12px;
+  color: #6b7280;
+  font-size: 0.875rem;
+}

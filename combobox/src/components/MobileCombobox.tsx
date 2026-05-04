@@ -180,14 +180,18 @@ export const MobileCombobox = ({
               {announcement}
             </div>
             <div className={styles.listScroll}>
-              {filteredGroups.map((group, index) => (
-                <Group
-                  key={group.title ?? `__ungrouped-${index}`}
-                  group={group}
-                  onSelect={handleSelect}
-                  selectedId={value ?? null}
-                />
-              ))}
+              {totalCount === 0 ? (
+                <div className={styles.emptyState}>No results</div>
+              ) : (
+                filteredGroups.map((group, index) => (
+                  <Group
+                    key={group.title ?? `__ungrouped-${index}`}
+                    group={group}
+                    onSelect={handleSelect}
+                    selectedId={value ?? null}
+                  />
+                ))
+              )}
             </div>
             {bottomLink && (
               <AriaLink
