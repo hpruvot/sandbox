@@ -28,7 +28,11 @@
 }
 
 .messageError {
-  color: #b91c1c;
+  color: #e5004c;
+}
+
+.messageWarning {
+  color: #b45309;
 }
 
 .disabled .label,

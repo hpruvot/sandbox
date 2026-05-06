@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useCallback, useId, useRef, useState } from "react";
 import type { Key } from "react-aria-components";
 import { ListBoxLoadMoreItem } from "react-aria-components";
 import { useAsyncList } from "react-stately";
+import { Controller, useForm } from "react-hook-form";
 
 import { Combobox, ComboboxItem, ComboboxSection } from "./components/Combobox";
+import { CircleCheckIcon, XmarkIcon } from "./components/icons";
 import { animals, fruitsBySection, longOptions } from "./components/data";
 import styles from "./App.module.css";
 
@@ -19,7 +21,7 @@ export const App = () => {
           Accessible combobox built on{" "}
           <a href="https://react-spectrum.adobe.com/react-aria/ComboBox.html">
             react-aria-components
-          </a>
+          </a>{" "}
           . Resize the window below 700px to switch to the mobile tray pattern.
         </p>
       </header>
@@ -27,7 +29,7 @@ export const App = () => {
       <section className={styles.demos}>
         <Demo title="1. Default — uncontrolled with default value">
           <Combobox
-            defaultValue="kangaroo"
+            value="kangaroo"
             label="Favorite animal"
             placeholder="Select an animal"
           >
@@ -52,7 +54,7 @@ export const App = () => {
               </ComboboxItem>
             ))}
           </Combobox>
-          <p className={styles.value}>
+          <p aria-hidden="true" className={styles.value}>
             Selected: <code>{animal == null ? "none" : String(animal)}</code>
           </p>
         </Demo>
@@ -129,6 +131,18 @@ export const App = () => {
         <Demo title="7. Item actions — create from typed value">
           <ItemActionsDemo />
         </Demo>
+
+        <Demo title="8. React Hook Form">
+          <ReactHookFormDemo />
+        </Demo>
+
+        <Demo title="9. US.8 — Listbox with remove buttons (⚠️ a11y: button inside role=option is invalid)">
+          <ListboxWithButtonsDemo />
+        </Demo>
+
+        <Demo title="10. US.8 — Grid alternative (role=grid, semantically valid)">
+          <GridComboboxDemo />
+        </Demo>
       </section>
     </main>
   );
@@ -202,16 +216,20 @@ const ItemActionsDemo = () => {
           if (key === CREATE_ITEM_ID) {
             setCreated((c) => (c.includes(trimmed) ? c : [...c, trimmed]));
             setSelected(trimmed);
+            setInputValue(trimmed);
             return;
           }
           setSelected(key);
+          const label =
+            animals.find((a) => a.id === key)?.name ?? String(key ?? "");
+          setInputValue(label);
         }}
         onInputChange={setInputValue}
         placeholder="Type to filter or create…"
         value={selected}
       >
         {showCreate && (
-          <ComboboxItem id={CREATE_ITEM_ID} textValue={trimmed}>
+          <ComboboxItem id={CREATE_ITEM_ID} textValue={`Create "${trimmed}"`}>
             {`Create "${trimmed}"`}
           </ComboboxItem>
         )}
@@ -226,8 +244,412 @@ const ItemActionsDemo = () => {
           </ComboboxItem>
         ))}
       </Combobox>
-      <p className={styles.value}>
+      <p aria-hidden="true" className={styles.value}>
         Selected: <code>{selected == null ? "none" : String(selected)}</code>
+      </p>
+    </>
+  );
+};
+
+type FormValues = {
+  animal: Key | null;
+  fruit: Key | null;
+};
+
+const ReactHookFormDemo = () => {
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+    reset,
+  } = useForm<FormValues>({
+    defaultValues: { animal: null, fruit: null },
+  });
+
+  const [submitted, setSubmitted] = useState<FormValues | null>(null);
+
+  return (
+    <form
+      onSubmit={handleSubmit((data) => setSubmitted(data))}
+      style={{ display: "flex", flexDirection: "column", gap: 12 }}
+    >
+      <Controller
+        control={control}
+        name="fruit"
+        render={({ field }) => (
+          <Combobox
+            label="Favorite fruit (optional)"
+            placeholder="Select a fruit"
+            value={field.value}
+            onChange={field.onChange}
+            onBlur={field.onBlur}
+            ref={field.ref}
+          >
+            {fruitsBySection.map((section) => (
+              <ComboboxSection key={section.title} title={section.title}>
+                {section.items.map((item) => (
+                  <ComboboxItem key={item.id} id={item.id}>
+                    {item.name}
+                  </ComboboxItem>
+                ))}
+              </ComboboxSection>
+            ))}
+          </Combobox>
+        )}
+      />
+      <Controller
+        control={control}
+        name="animal"
+        rules={{ required: "Please select an animal." }}
+        render={({ field, fieldState }) => (
+          <Combobox
+            label="Favorite animal"
+            placeholder="Select an animal"
+            isRequired
+            showRequirementLabel
+            value={field.value}
+            onChange={field.onChange}
+            onBlur={field.onBlur}
+            ref={field.ref}
+            state={fieldState.error ? "error" : undefined}
+            message={fieldState.error?.message}
+          >
+            {animals.map((a) => (
+              <ComboboxItem key={a.id} id={a.id}>
+                {a.name}
+              </ComboboxItem>
+            ))}
+          </Combobox>
+        )}
+      />
+      <div style={{ display: "flex", gap: 8 }}>
+        <button type="submit">Submit</button>
+        <button
+          type="button"
+          onClick={() => {
+            reset();
+            setSubmitted(null);
+          }}
+        >
+          Reset
+        </button>
+      </div>
+      {submitted && (
+        <p aria-hidden="true" className={styles.value}>
+          Submitted: <code>{JSON.stringify(submitted)}</code>
+        </p>
+      )}
+      {errors.animal && !submitted && (
+        <p aria-hidden="true" className={styles.value}>
+          Form has errors — fix them and resubmit.
+        </p>
+      )}
+    </form>
+  );
+};
+
+// ---------------------------------------------------------------------------
+// Demo 9 — Listbox with remove buttons
+// ⚠️ Semantically invalid: <button> inside role="option" is not allowed per
+// ARIA. Screen readers see the option text but can't reach/activate the button.
+// Works visually and with a mouse, but fails keyboard-only and SR workflows.
+// ---------------------------------------------------------------------------
+const ListboxWithButtonsDemo = () => {
+  const [items, setItems] = useState(animals);
+  const [selected, setSelected] = useState<Key | null>(null);
+
+  const handleRemove = (id: string) => {
+    setItems((prev) => prev.filter((a) => a.id !== id));
+    if (selected === id) setSelected(null);
+  };
+
+  return (
+    <>
+      <Combobox
+        allowsEmptyCollection
+        label="Posology"
+        onChange={setSelected}
+        placeholder="Select one"
+        value={selected}
+      >
+        {items.map((a) => (
+          <ComboboxItem key={a.id} id={a.id} textValue={a.name}>
+            {a.name}
+            <button
+              aria-label={`Remove ${a.name}`}
+              className={styles.removeButton}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleRemove(a.id);
+              }}
+              onPointerDown={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+              }}
+              onPointerUp={(e) => {
+                e.stopPropagation();
+              }}
+              type="button"
+            >
+              <XmarkIcon />
+            </button>
+          </ComboboxItem>
+        ))}
+      </Combobox>
+      <p aria-hidden="true" className={styles.value}>
+        Selected: <code>{selected == null ? "none" : String(selected)}</code>
+        {" · "}{items.length} items remaining
+      </p>
+    </>
+  );
+};
+
+// ---------------------------------------------------------------------------
+// Demo 10 — Grid-based combobox (custom, no RAC ComboBox)
+// Uses role="grid" with role="row" / role="gridcell" so each row can contain
+// a label cell (for selection) and an action cell (remove button).
+// Keyboard: ↑↓ moves between rows, Enter selects, Tab moves to the action
+// button within the row, Escape closes. Filtering via the input.
+// ---------------------------------------------------------------------------
+const GridComboboxDemo = () => {
+  const [items, setItems] = useState(animals);
+  const [selected, setSelected] = useState<Key | null>(null);
+  const [inputValue, setInputValue] = useState("");
+  const [isOpen, setIsOpen] = useState(false);
+  const [focusedIndex, setFocusedIndex] = useState(-1);
+  const [focusedCol, setFocusedCol] = useState<0 | 1>(0);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
+  const id = useId();
+  const gridId = `${id}-grid`;
+
+  const filtered = items.filter((a) =>
+    a.name.toLowerCase().includes(inputValue.toLowerCase()),
+  );
+
+  const selectedLabel = items.find((a) => a.id === selected)?.name ?? "";
+
+  const openMenu = useCallback(() => {
+    setIsOpen(true);
+    setFocusedIndex(0);
+    setFocusedCol(0);
+  }, []);
+
+  const closeMenu = useCallback(() => {
+    setIsOpen(false);
+    setFocusedIndex(-1);
+    setFocusedCol(0);
+  }, []);
+
+  const selectItem = useCallback(
+    (key: Key) => {
+      const label = items.find((a) => a.id === key)?.name ?? "";
+      setSelected(key);
+      setInputValue(label);
+      closeMenu();
+      inputRef.current?.focus();
+    },
+    [items, closeMenu],
+  );
+
+  const removeItem = useCallback(
+    (itemId: string) => {
+      setItems((prev) => prev.filter((a) => a.id !== itemId));
+      if (selected === itemId) {
+        setSelected(null);
+        setInputValue("");
+      }
+    },
+    [selected],
+  );
+
+  const focusRemoveButton = useCallback(
+    (rowIndex: number) => {
+      const item = filtered[rowIndex];
+      if (!item || !gridRef.current) return;
+      const btn = gridRef.current.querySelector<HTMLButtonElement>(
+        `#${CSS.escape(`${id}-row-${item.id}`)} button`,
+      );
+      btn?.focus();
+    },
+    [filtered, id],
+  );
+
+  const returnToInput = useCallback(() => {
+    setFocusedCol(0);
+    inputRef.current?.focus();
+  }, []);
+
+  const handleInputKeyDown = (e: React.KeyboardEvent) => {
+    switch (e.key) {
+      case "ArrowDown":
+        e.preventDefault();
+        if (!isOpen) openMenu();
+        else setFocusedIndex((i) => Math.min(i + 1, filtered.length - 1));
+        break;
+      case "ArrowUp":
+        e.preventDefault();
+        if (isOpen) setFocusedIndex((i) => Math.max(i - 1, 0));
+        break;
+      case "ArrowRight":
+        if (isOpen && focusedIndex >= 0) {
+          e.preventDefault();
+          setFocusedCol(1);
+          focusRemoveButton(focusedIndex);
+        }
+        break;
+      case "Enter":
+        e.preventDefault();
+        if (isOpen && focusedIndex >= 0 && filtered[focusedIndex]) {
+          selectItem(filtered[focusedIndex].id);
+        }
+        break;
+      case "Escape":
+        if (isOpen) {
+          e.preventDefault();
+          closeMenu();
+          setInputValue(selectedLabel);
+        }
+        break;
+    }
+  };
+
+  const handleGridButtonKeyDown = (e: React.KeyboardEvent, rowIndex: number) => {
+    switch (e.key) {
+      case "ArrowLeft":
+        e.preventDefault();
+        returnToInput();
+        break;
+      case "ArrowDown":
+        e.preventDefault();
+        if (rowIndex < filtered.length - 1) {
+          setFocusedIndex(rowIndex + 1);
+          focusRemoveButton(rowIndex + 1);
+        }
+        break;
+      case "ArrowUp":
+        e.preventDefault();
+        if (rowIndex > 0) {
+          setFocusedIndex(rowIndex - 1);
+          focusRemoveButton(rowIndex - 1);
+        } else {
+          returnToInput();
+        }
+        break;
+      case "Escape":
+        e.preventDefault();
+        closeMenu();
+        setInputValue(selectedLabel);
+        inputRef.current?.focus();
+        break;
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInputValue(e.target.value);
+    if (!isOpen) openMenu();
+    setFocusedIndex(0);
+    setFocusedCol(0);
+  };
+
+  const focusedId =
+    isOpen && focusedIndex >= 0 && focusedCol === 0 && filtered[focusedIndex]
+      ? `${id}-row-${filtered[focusedIndex].id}`
+      : undefined;
+
+  return (
+    <>
+      <div style={{ position: "relative" }}>
+        <label
+          htmlFor={`${id}-input`}
+          style={{ display: "block", fontSize: "0.875rem", fontWeight: 500, marginBottom: 4 }}
+        >
+          Posology (grid)
+        </label>
+        <div className={styles.gridInputWrapper}>
+          <input
+            aria-activedescendant={focusedId}
+            aria-autocomplete="list"
+            aria-controls={isOpen ? gridId : undefined}
+            aria-expanded={isOpen}
+            className={styles.gridInput}
+            id={`${id}-input`}
+            onChange={handleInputChange}
+            onClick={() => !isOpen && openMenu()}
+            onFocus={() => !isOpen && openMenu()}
+            onBlur={(e) => {
+              // Don't close if clicking inside the grid
+              if (gridRef.current?.contains(e.relatedTarget)) return;
+              closeMenu();
+            }}
+            onKeyDown={handleInputKeyDown}
+            placeholder="Select one"
+            ref={inputRef}
+            role="combobox"
+            type="text"
+            value={inputValue}
+          />
+        </div>
+        {isOpen && (
+          <div
+            className={styles.gridPopover}
+            id={gridId}
+            onMouseDown={(e) => e.preventDefault()}
+            ref={gridRef}
+            role="grid"
+            aria-label="Posology options"
+          >
+            {filtered.length === 0 ? (
+              <div className={styles.gridEmpty}>No results</div>
+            ) : (
+              filtered.map((a, index) => {
+                const isFocused = index === focusedIndex;
+                const isItemSelected = a.id === selected;
+                return (
+                  <div
+                    aria-selected={isItemSelected || undefined}
+                    className={`${styles.gridRow} ${isFocused ? styles.gridRowFocused : ""}`}
+                    id={`${id}-row-${a.id}`}
+                    key={a.id}
+                    role="row"
+                  >
+                    <div
+                      className={styles.gridCell}
+                      onClick={() => selectItem(a.id)}
+                      role="gridcell"
+                    >
+                      <span className={styles.gridCellLabel}>
+                        {a.name}
+                      </span>
+                      {isItemSelected && (
+                        <CircleCheckIcon style={{ color: "#2563eb", flexShrink: 0 }} />
+                      )}
+                    </div>
+                    <div className={styles.gridCellAction} role="gridcell">
+                      <button
+                        aria-label={`Remove ${a.name}`}
+                        className={styles.gridRemoveButton}
+                        onClick={() => {
+                          removeItem(a.id);
+                          returnToInput();
+                        }}
+                        onKeyDown={(e) => handleGridButtonKeyDown(e, index)}
+                        tabIndex={isFocused && focusedCol === 1 ? 0 : -1}
+                        type="button"
+                      >
+                        <XmarkIcon />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        )}
+      </div>
+      <p aria-hidden="true" className={styles.value}>
+        Selected: <code>{selected == null ? "none" : String(selected)}</code>
+        {" · "}{items.length} items remaining
       </p>
     </>
   );

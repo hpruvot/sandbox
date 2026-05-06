@@ -35,7 +35,7 @@ import {
   getFieldInputId,
   getFieldLabelId,
 } from "./Field";
-import { ChevronDownIcon, XmarkIcon } from "./icons";
+import { ChevronDownIcon, CircleCheckIcon, XmarkIcon } from "./icons";
 import { MobileCombobox } from "./MobileCombobox";
 import { usePlatform } from "./usePlatform";
 import styles from "./Combobox.module.css";
@@ -72,11 +72,13 @@ export type ComboboxProps = Omit<
   placeholder?: string;
   /** Shows a required/optional marker next to the label. */
   showRequirementLabel?: boolean;
-  /** Currently selected option key (controlled). */
+  /**
+   * Selected option key. When `onChange` is provided the component is
+   * controlled and the consumer must update `value` in response.
+   * Without `onChange`, `value` seeds the initial selection (uncontrolled).
+   */
   value?: Key | null;
-  /** Default selected option key (uncontrolled). */
-  defaultValue?: Key;
-  /** Called when the selected option changes. */
+  /** Called when the selected option changes. Passing this prop makes the component controlled. */
   onChange?: (value: Key | null) => void;
   /** `ListBoxItem` / `Section` children — renders inside the popover listbox. */
   children: ReactNode;
@@ -101,7 +103,6 @@ export const Combobox = forwardRef<HTMLInputElement, ComboboxProps>(
       isRequired,
       showRequirementLabel,
       value,
-      defaultValue,
       onChange,
       children,
       bottomLink,
@@ -114,16 +115,16 @@ export const Combobox = forwardRef<HTMLInputElement, ComboboxProps>(
     const listboxId = `${id}-listbox`;
     const ariaDescribedBy = computeAriaDescribedBy({ hint, message, id });
 
+    const isControlled = onChange !== undefined;
+
     // Always control inputValue on AriaComboBox so the clear button actually
     // clears the input. Consumers can override by passing their own inputValue
     // (e.g. the item-actions pattern) — we then defer to theirs but still mirror
     // every change in our local state.
-    // Seed from `defaultValue` first, then `value`, so a freshly mounted
-    // controlled combobox displays the matching option text.
     const [inputValue, setInputValue] = useState(
       () =>
         consumerInputValue ??
-        findOptionText(children, defaultValue ?? value ?? undefined) ??
+        findOptionText(children, value ?? undefined) ??
         "",
     );
 
@@ -138,10 +139,13 @@ export const Combobox = forwardRef<HTMLInputElement, ComboboxProps>(
     // RAC processes the selection close together with the input update; doing
     // it in a useEffect would re-render and RAC's `menuTrigger='input'` would
     // re-open the popover.
+    const [selectionAnnouncement, setSelectionAnnouncement] = useState("");
     const handleSelectionChange = (key: Key | null) => {
+      const text = findOptionText(children, key ?? undefined) ?? "";
       if (consumerInputValue === undefined) {
-        setInputValue(findOptionText(children, key ?? undefined) ?? "");
+        setInputValue(text);
       }
+      setSelectionAnnouncement(key != null ? `Selected: ${text}` : "");
       onChange?.(key);
     };
     const [isOpen, setIsOpen] = useState(false);
@@ -228,13 +232,10 @@ export const Combobox = forwardRef<HTMLInputElement, ComboboxProps>(
           isInvalid={state === "error"}
           isRequired={isRequired}
           onInputChange={handleInputChange}
-          {...(value !== undefined && { selectedKey: value })}
-          {...(defaultValue !== undefined && {
-            defaultSelectedKey: defaultValue,
-          })}
-          {...((onChange !== undefined || value !== undefined) && {
-            onSelectionChange: handleSelectionChange,
-          })}
+          {...(isControlled
+            ? { selectedKey: value ?? null, onSelectionChange: handleSelectionChange }
+            : value !== undefined && { defaultSelectedKey: value ?? undefined }
+          )}
           {...comboBoxProps}
           onOpenChange={handleOpenChange}
           shouldFocusWrap
@@ -252,6 +253,7 @@ export const Combobox = forwardRef<HTMLInputElement, ComboboxProps>(
               className={styles.clearButton}
               onClick={() => {
                 handleInputChange("");
+                handleSelectionChange(null);
                 innerInputRef.current?.focus();
               }}
               onMouseDown={(event) => event.preventDefault()}
@@ -308,6 +310,13 @@ export const Combobox = forwardRef<HTMLInputElement, ComboboxProps>(
             )}
           </AriaPopover>
         </AriaComboBox>
+        <div
+          aria-live="assertive"
+          className={styles.visuallyHidden}
+          role="status"
+        >
+          {selectionAnnouncement}
+        </div>
       </Field>
     );
   },
@@ -319,8 +328,24 @@ Combobox.displayName = "Combobox";
  * A single option inside `Combobox`. Pass the option label as children — use
  * `textValue` for rich content so screen readers still get a clean accessible name.
  */
-export const ComboboxItem = (props: AriaListBoxItemProps) => (
-  <AriaListBoxItem {...props} className={styles.option} />
+export const ComboboxItem = ({
+  children,
+  ...props
+}: Omit<AriaListBoxItemProps, "children"> & { children?: ReactNode }) => (
+  <AriaListBoxItem
+    {...props}
+    className={styles.option}
+    textValue={
+      props.textValue ?? (typeof children === "string" ? children : undefined)
+    }
+  >
+    {({ isSelected }) => (
+      <>
+        <span className={styles.optionLabel}>{children}</span>
+        {isSelected && <CircleCheckIcon className={styles.optionCheck} />}
+      </>
+    )}
+  </AriaListBoxItem>
 );
 
 ComboboxItem.displayName = "ComboboxItem";
@@ -348,8 +373,8 @@ export const ComboboxSection = ({
 ComboboxSection.displayName = "ComboboxSection";
 
 // Walk a `Combobox` children tree (Items + Sections) and return the visible
-// text for the option whose `id` matches `key`. Used to seed the controlled
-// `inputValue` from `defaultValue` on mount.
+// text for the option whose `id` matches `key`. Used to seed `inputValue`
+// from `value` on mount.
 function findOptionText(
   children: ReactNode,
   key: Key | undefined,

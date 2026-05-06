@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 
 import styles from './Field.module.css'
 
-export type FieldState = 'default' | 'error'
+export type FieldState = 'warning' | 'error'
 
 export const getFieldLabelId = (id: string) => `${id}-label`
 export const getFieldInputId = (id: string) => `${id}-input`
@@ -46,13 +46,12 @@ export const Field = ({
   label,
   hint,
   message,
-  state = 'default',
+  state,
   isDisabled,
   isRequired,
   showRequirementLabel,
   children,
 }: FieldProps) => {
-  const isError = state === 'error'
   return (
     <div className={classNames(styles.field, { [styles.disabled]: isDisabled })}>
       <label className={styles.label} htmlFor={getFieldInputId(id)} id={getFieldLabelId(id)}>
@@ -69,7 +68,10 @@ export const Field = ({
       {children}
       {message && (
         <p
-          className={classNames(styles.message, { [styles.messageError]: isError })}
+          className={classNames(styles.message, {
+            [styles.messageError]: state === 'error',
+            [styles.messageWarning]: state === 'warning',
+          })}
           id={getFieldMessageId(id)}
         >
           {message}

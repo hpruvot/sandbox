@@ -137,7 +137,9 @@ export const MobileCombobox = ({
   return (
     <AriaDialogTrigger isOpen={isOpen && !isDisabled} onOpenChange={setIsOpen}>
       <AriaButton
+        aria-hidden={isDisabled ? true : undefined}
         className={classNames(styles.combobox, { [styles.isDisabled]: isDisabled })}
+        excludeFromTabOrder={isDisabled}
         isDisabled={isDisabled}
       >
         {selectedLabel ?? placeholder ?? ''}

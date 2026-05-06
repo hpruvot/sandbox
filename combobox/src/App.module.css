@@ -61,3 +61,134 @@
   background: #f3f4f6;
   font-size: 0.8125rem;
 }
+
+/* Demo 9 — remove button inside listbox item */
+.removeButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  min-width: 24px;
+  min-height: 24px;
+  margin-left: auto;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: #9ca3af;
+  cursor: pointer;
+}
+
+.removeButton:hover {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+/* Demo 10 — grid combobox */
+.gridInputWrapper {
+  position: relative;
+}
+
+.gridInput {
+  width: 100%;
+  height: 40px;
+  padding: 4px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #111827;
+  font: inherit;
+  font-size: 0.875rem;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.gridInput:focus {
+  border-color: #2563eb;
+}
+
+.gridInput:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.gridPopover {
+  position: absolute;
+  z-index: 10;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 320px;
+  padding: 4px 0;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow:
+    0 0 0 1px rgba(15, 23, 42, 0.04),
+    0 8px 24px rgba(15, 23, 42, 0.12);
+  overflow-y: auto;
+}
+
+.gridRow {
+  display: flex;
+  align-items: center;
+  padding: 0 4px 0 0;
+  outline: none;
+}
+
+.gridRowFocused {
+  background: #eff6ff;
+}
+
+.gridCell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  padding: 8px 8px 8px 12px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: #111827;
+}
+
+.gridCellLabel {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gridCellAction {
+  flex: none;
+}
+
+.gridRemoveButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  min-height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: #9ca3af;
+  cursor: pointer;
+}
+
+.gridRemoveButton:hover {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.gridRemoveButton:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: -2px;
+}
+
+.gridEmpty {
+  padding: 8px 12px;
+  color: #6b7280;
+  font-size: 0.875rem;
+}
