@@ -192,3 +192,170 @@
   color: #6b7280;
   font-size: 0.875rem;
 }
+
+/* Demo 11 — combobox inside MUI Modal */
+.modalTrigger {
+  align-self: flex-start;
+  height: 40px;
+  padding: 0 16px;
+  border: 1px solid #2563eb;
+  border-radius: 6px;
+  background: #2563eb;
+  color: #ffffff;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.modalTrigger:hover {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
+.muiModal {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modalContent {
+  display: flex;
+  flex-direction: column;
+  width: min(560px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow:
+    0 0 0 1px rgba(15, 23, 42, 0.04),
+    0 20px 50px rgba(15, 23, 42, 0.25);
+  outline: none;
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 16px 16px 24px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.modalTitle {
+  flex: 1;
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.modalClose {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+}
+
+.modalClose:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.modalBody {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+  overflow-y: auto;
+}
+
+.modalIntro {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #4b5563;
+}
+
+.modalFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 16px 24px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.modalPrimary,
+.modalSecondary {
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.modalPrimary {
+  border: 1px solid #2563eb;
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.modalPrimary:hover {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
+.modalSecondary {
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: #111827;
+}
+
+.modalSecondary:hover {
+  background: #f9fafb;
+}
+
+/* Demo 12 — SwipeableDrawer */
+.drawerPaper {
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  background: #ffffff;
+}
+
+.drawerHandleRow {
+  display: flex;
+  justify-content: center;
+  padding: 8px 0 4px;
+}
+
+.drawerHandle {
+  width: 40px;
+  height: 4px;
+  border-radius: 999px;
+  background: #d1d5db;
+}
+
+.drawerHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px 12px 24px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.drawerBody {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+  overflow-y: auto;
+}

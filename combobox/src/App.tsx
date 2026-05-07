@@ -3,6 +3,8 @@ import type { Key } from "react-aria-components";
 import { ListBoxLoadMoreItem } from "react-aria-components";
 import { useAsyncList } from "react-stately";
 import { Controller, useForm } from "react-hook-form";
+import MaterialModal from "@mui/material/Modal";
+import SwipeableDrawer from "@mui/material/SwipeableDrawer";
 
 import { Combobox, ComboboxItem, ComboboxSection } from "./components/Combobox";
 import { CircleCheckIcon, XmarkIcon } from "./components/icons";
@@ -142,6 +144,14 @@ export const App = () => {
 
         <Demo title="10. US.8 — Grid alternative (role=grid, semantically valid)">
           <GridComboboxDemo />
+        </Demo>
+
+        <Demo title="11. Combobox inside an MUI Modal (test mobile tray behavior)">
+          <ModalComboboxDemo />
+        </Demo>
+
+        <Demo title="12. Combobox inside an MUI SwipeableDrawer (bottom sheet)">
+          <SwipeableDrawerComboboxDemo />
         </Demo>
       </section>
     </main>
@@ -651,6 +661,234 @@ const GridComboboxDemo = () => {
         Selected: <code>{selected == null ? "none" : String(selected)}</code>
         {" · "}{items.length} items remaining
       </p>
+    </>
+  );
+};
+
+// ---------------------------------------------------------------------------
+// Demo 11 — Combobox inside an MUI Modal (mirrors oxygen Modal usage)
+// On mobile (<700px), the Combobox swaps to MobileCombobox which renders its
+// own react-aria ModalOverlay tray. That tray is portaled into <body>, so it
+// sits *next to* the MUI Modal in the DOM rather than inside it — focus
+// trapping, scroll-lock, and stacking can all collide. This demo is the place
+// to reproduce and probe those issues.
+// ---------------------------------------------------------------------------
+const ModalComboboxDemo = () => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [animal, setAnimal] = useState<Key | null>(null);
+  const [fruit, setFruit] = useState<Key | null>(null);
+  const titleId = useId();
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setIsOpen(true)}
+        className={styles.modalTrigger}
+      >
+        Open modal with combobox
+      </button>
+
+      <MaterialModal
+        aria-labelledby={titleId}
+        open={isOpen}
+        onClose={() => setIsOpen(false)}
+        className={styles.muiModal}
+      >
+        <div className={styles.modalContent}>
+          <header className={styles.modalHeader}>
+            <h2 id={titleId} className={styles.modalTitle}>
+              Pick something
+            </h2>
+            <button
+              type="button"
+              aria-label="Close"
+              className={styles.modalClose}
+              onClick={() => setIsOpen(false)}
+            >
+              <XmarkIcon />
+            </button>
+          </header>
+
+          <div className={styles.modalBody}>
+            <p className={styles.modalIntro}>
+              Resize below 700px to switch the comboboxes to the mobile tray and
+              see how they interact with the MUI Modal (focus, scroll-lock,
+              stacking).
+            </p>
+            <Combobox
+              label="Favorite animal"
+              placeholder="Select an animal"
+              value={animal}
+              onChange={setAnimal}
+            >
+              {animals.map((a) => (
+                <ComboboxItem key={a.id} id={a.id}>
+                  {a.name}
+                </ComboboxItem>
+              ))}
+            </Combobox>
+            <Combobox
+              label="Favorite fruit"
+              placeholder="Select a fruit"
+              value={fruit}
+              onChange={setFruit}
+            >
+              {fruitsBySection.map((section) => (
+                <ComboboxSection key={section.title} title={section.title}>
+                  {section.items.map((item) => (
+                    <ComboboxItem key={item.id} id={item.id}>
+                      {item.name}
+                    </ComboboxItem>
+                  ))}
+                </ComboboxSection>
+              ))}
+            </Combobox>
+            <Combobox
+              label="Pick from a long list"
+              placeholder="Type to filter…"
+            >
+              {longOptions.slice(0, 50).map((o) => (
+                <ComboboxItem key={o.id} id={o.id}>
+                  {o.name}
+                </ComboboxItem>
+              ))}
+            </Combobox>
+          </div>
+
+          <footer className={styles.modalFooter}>
+            <button
+              type="button"
+              onClick={() => setIsOpen(false)}
+              className={styles.modalSecondary}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsOpen(false)}
+              className={styles.modalPrimary}
+            >
+              Confirm
+            </button>
+          </footer>
+        </div>
+      </MaterialModal>
+    </>
+  );
+};
+
+// ---------------------------------------------------------------------------
+// Demo 12 — Combobox inside an MUI SwipeableDrawer (bottom sheet)
+// SwipeableDrawer is the typical mobile bottom-sheet container. The mobile
+// Combobox tray is itself a portaled ModalOverlay, so opening it from inside
+// a SwipeableDrawer stacks two body-portals on top of each other — same
+// focus/scroll questions as Demo 11, plus the swipe gesture.
+// ---------------------------------------------------------------------------
+const SwipeableDrawerComboboxDemo = () => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [animal, setAnimal] = useState<Key | null>(null);
+  const [fruit, setFruit] = useState<Key | null>(null);
+  const titleId = useId();
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setIsOpen(true)}
+        className={styles.modalTrigger}
+      >
+        Open swipeable drawer
+      </button>
+
+      <SwipeableDrawer
+        anchor="bottom"
+        open={isOpen}
+        onClose={() => setIsOpen(false)}
+        onOpen={() => setIsOpen(true)}
+        disableSwipeToOpen
+        slotProps={{
+          root: { "aria-labelledby": titleId },
+          paper: { className: styles.drawerPaper },
+        }}
+      >
+        <div className={styles.drawerHandleRow}>
+          <div aria-hidden="true" className={styles.drawerHandle} />
+        </div>
+        <header className={styles.drawerHeader}>
+          <h2 id={titleId} className={styles.modalTitle}>
+            Pick something
+          </h2>
+          <button
+            type="button"
+            aria-label="Close"
+            className={styles.modalClose}
+            onClick={() => setIsOpen(false)}
+          >
+            <XmarkIcon />
+          </button>
+        </header>
+
+        <div className={styles.drawerBody}>
+          <p className={styles.modalIntro}>
+            Same content as Demo 11 but inside a SwipeableDrawer (bottom
+            sheet). Try opening a combobox on mobile to see how the tray
+            stacks with the drawer.
+          </p>
+          <Combobox
+            label="Favorite animal"
+            placeholder="Select an animal"
+            value={animal}
+            onChange={setAnimal}
+          >
+            {animals.map((a) => (
+              <ComboboxItem key={a.id} id={a.id}>
+                {a.name}
+              </ComboboxItem>
+            ))}
+          </Combobox>
+          <Combobox
+            label="Favorite fruit"
+            placeholder="Select a fruit"
+            value={fruit}
+            onChange={setFruit}
+          >
+            {fruitsBySection.map((section) => (
+              <ComboboxSection key={section.title} title={section.title}>
+                {section.items.map((item) => (
+                  <ComboboxItem key={item.id} id={item.id}>
+                    {item.name}
+                  </ComboboxItem>
+                ))}
+              </ComboboxSection>
+            ))}
+          </Combobox>
+          <Combobox label="Pick from a long list" placeholder="Type to filter…">
+            {longOptions.slice(0, 50).map((o) => (
+              <ComboboxItem key={o.id} id={o.id}>
+                {o.name}
+              </ComboboxItem>
+            ))}
+          </Combobox>
+        </div>
+
+        <footer className={styles.modalFooter}>
+          <button
+            type="button"
+            onClick={() => setIsOpen(false)}
+            className={styles.modalSecondary}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsOpen(false)}
+            className={styles.modalPrimary}
+          >
+            Confirm
+          </button>
+        </footer>
+      </SwipeableDrawer>
     </>
   );
 };
