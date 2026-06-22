@@ -18,7 +18,7 @@
 .subtitle {
   margin: 0;
   color: #4b5563;
-  font-size: 0.9375rem;
+  font-size: 16px;
 }
 
 .demos {
@@ -36,7 +36,7 @@
 
 .demoTitle {
   margin: 0 0 12px;
-  font-size: 0.875rem;
+  font-size: 16px;
   font-weight: 600;
   color: #374151;
   text-transform: uppercase;
@@ -98,7 +98,7 @@
   background: #ffffff;
   color: #111827;
   font: inherit;
-  font-size: 0.875rem;
+  font-size: 16px;
   outline: none;
   box-sizing: border-box;
 }
@@ -148,7 +148,7 @@
   min-width: 0;
   padding: 8px 8px 8px 12px;
   cursor: pointer;
-  font-size: 0.875rem;
+  font-size: 16px;
   color: #111827;
 }
 
@@ -190,7 +190,7 @@
 .gridEmpty {
   padding: 8px 12px;
   color: #6b7280;
-  font-size: 0.875rem;
+  font-size: 16px;
 }
 
 /* Demo 11 — combobox inside MUI Modal */
@@ -203,7 +203,7 @@
   background: #2563eb;
   color: #ffffff;
   font: inherit;
-  font-size: 0.875rem;
+  font-size: 16px;
   font-weight: 500;
   cursor: pointer;
 }
@@ -277,7 +277,7 @@
 
 .modalIntro {
   margin: 0;
-  font-size: 0.875rem;
+  font-size: 16px;
   color: #4b5563;
 }
 
@@ -295,7 +295,7 @@
   padding: 0 16px;
   border-radius: 6px;
   font: inherit;
-  font-size: 0.875rem;
+  font-size: 16px;
   font-weight: 500;
   cursor: pointer;
 }
