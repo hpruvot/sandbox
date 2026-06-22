@@ -7,8 +7,8 @@ import {
   Link as AriaLink,
   Modal as AriaModal,
   ModalOverlay as AriaModalOverlay,
-} from 'react-aria-components'
-import classNames from 'classnames'
+} from "react-aria-components";
+import classNames from "classnames";
 import {
   Children,
   isValidElement,
@@ -19,29 +19,35 @@ import {
   useMemo,
   useRef,
   useState,
-} from 'react'
-import { useFilter } from 'react-aria'
+} from "react";
+import { useFilter } from "react-aria";
 
-import { XmarkIcon } from './icons'
-import styles from './MobileCombobox.module.css'
+import { XmarkIcon } from "./icons";
+import styles from "./MobileCombobox.module.css";
 
 export type MobileComboboxProps = {
-  label: string
-  placeholder?: string
-  value?: Key | null
-  onChange?: (value: Key | null) => void
+  label: string;
+  placeholder?: string;
+  value?: Key | null;
+  onChange?: (value: Key | null) => void;
   /** `ComboboxItem` / `ComboboxSection` children. */
-  children: ReactNode
+  children: ReactNode;
   /** Optional link rendered below the list inside the tray. */
-  bottomLink?: { label: string; href: string }
+  bottomLink?: { label: string; href: string };
   /** Mirrors the desktop API — fired as the user types into the search input. */
-  onInputChange?: (value: string) => void
+  onInputChange?: (value: string) => void;
   /** When true, the trigger is unclickable and the tray cannot be opened. */
-  isDisabled?: boolean
-}
+  isDisabled?: boolean;
+  /**
+   * Controlled input value. When provided, local client-side filtering is
+   * skipped — the consumer is responsible for filtering children in response
+   * to `onInputChange` (e.g. via `useAsyncList`).
+   */
+  inputValue?: string;
+};
 
-type FlatItem = { id: Key; label: string; onAction?: () => void }
-type ItemGroup = { title?: string; items: FlatItem[] }
+type FlatItem = { id: Key; label: string; onAction?: () => void };
+type ItemGroup = { title?: string; items: FlatItem[] };
 
 /**
  * Mobile tray combobox. Uses a `searchbox` input + `ul`/`li`/`button` list
@@ -59,42 +65,75 @@ export const MobileCombobox = ({
   bottomLink,
   onInputChange,
   isDisabled = false,
+  inputValue: externalInputValue,
 }: MobileComboboxProps) => {
-  const [isOpen, setIsOpen] = useState(false)
-  const [query, setQuery] = useState('')
-  const [announcement, setAnnouncement] = useState('')
-  const inputRef = useRef<HTMLInputElement>(null)
-  const { contains } = useFilter({ sensitivity: 'base' })
+  const [isOpen, setIsOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [announcement, setAnnouncement] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+  const listScrollRef = useRef<HTMLDivElement>(null);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const { contains } = useFilter({ sensitivity: "base" });
 
-  const groups = useMemo(() => extractGroups(children), [children])
+  // When `inputValue` is provided externally, the consumer drives filtering
+  // (e.g. async list). Skip local filtering and use the external value.
+  const isExternallyFiltered = externalInputValue !== undefined;
+  const effectiveQuery = externalInputValue ?? query;
+
+  const groups = useMemo(() => extractGroups(children), [children]);
+  const { onLoadMore, isLoading } = useMemo(
+    () => extractLoadMore(children),
+    [children],
+  );
 
   const filteredGroups = useMemo<ItemGroup[]>(() => {
-    if (!query.trim()) return groups
+    if (isExternallyFiltered || !effectiveQuery.trim()) return groups;
     return groups
-      .map((g) => ({ ...g, items: g.items.filter((i) => contains(i.label, query)) }))
-      .filter((g) => g.items.length > 0)
-  }, [groups, query, contains])
+      .map((g) => ({
+        ...g,
+        items: g.items.filter((i) => contains(i.label, effectiveQuery)),
+      }))
+      .filter((g) => g.items.length > 0);
+  }, [groups, effectiveQuery, contains, isExternallyFiltered]);
 
   const totalCount = useMemo(
     () => filteredGroups.reduce((sum, g) => sum + g.items.length, 0),
     [filteredGroups],
-  )
+  );
 
   // Debounce the live-region update so VoiceOver isn't spammed mid-typing.
   useEffect(() => {
     if (!isOpen) {
-      setAnnouncement('')
-      return
+      setAnnouncement("");
+      return;
     }
     const id = setTimeout(() => {
       setAnnouncement(
         totalCount === 0
-          ? 'No results'
-          : `${totalCount} ${totalCount === 1 ? 'result' : 'results'}`,
-      )
-    }, 300)
-    return () => clearTimeout(id)
-  }, [totalCount, isOpen, query])
+          ? "No results"
+          : `${totalCount} ${totalCount === 1 ? "result" : "results"}`,
+      );
+    }, 300);
+    return () => clearTimeout(id);
+  }, [totalCount, isOpen, effectiveQuery]);
+
+  // IntersectionObserver on a sentinel at the bottom of the list — fires as
+  // soon as the sentinel enters the scroll container's viewport, including on
+  // first open when items don't yet fill the tray.
+  useEffect(() => {
+    if (!onLoadMore || !isOpen) return;
+    const sentinel = sentinelRef.current;
+    const root = listScrollRef.current;
+    if (!sentinel || !root) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) onLoadMore();
+      },
+      { root, threshold: 0 },
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [onLoadMore, isOpen]);
 
   // `autoFocus` on the input handles the synchronous case (sighted users —
   // focus appears in the input as soon as the tray mounts). VoiceOver doesn't
@@ -102,52 +141,54 @@ export const MobileCombobox = ({
   // the trigger. Re-focus once the modal has settled so VO registers the
   // dialog context first, then follows DOM focus into the input.
   useEffect(() => {
-    if (!isOpen) return
+    if (!isOpen) return;
     const id = setTimeout(() => {
-      inputRef.current?.focus({ preventScroll: true })
-    }, 100)
-    return () => clearTimeout(id)
-  }, [isOpen])
+      inputRef.current?.focus({ preventScroll: true });
+    }, 100);
+    return () => clearTimeout(id);
+  }, [isOpen]);
 
   const selectedLabel = useMemo(() => {
-    if (value == null) return null
+    if (value == null) return null;
     for (const g of groups) {
-      const found = g.items.find((i) => i.id === value)
-      if (found) return found.label
+      const found = g.items.find((i) => i.id === value);
+      if (found) return found.label;
     }
-    return null
-  }, [groups, value])
+    return null;
+  }, [groups, value]);
 
   const handleQueryChange = (next: string) => {
-    setQuery(next)
-    onInputChange?.(next)
-  }
+    if (!isExternallyFiltered) setQuery(next);
+    onInputChange?.(next);
+  };
 
   const handleSelect = (item: FlatItem) => {
     if (item.onAction) {
-      item.onAction()
+      item.onAction();
     } else {
-      onChange?.(item.id)
+      onChange?.(item.id);
     }
-    setIsOpen(false)
-    setQuery('')
-    onInputChange?.('')
-  }
+    setIsOpen(false);
+    setQuery("");
+    onInputChange?.("");
+  };
 
   return (
     <AriaDialogTrigger isOpen={isOpen && !isDisabled} onOpenChange={setIsOpen}>
       <AriaButton
         aria-hidden={isDisabled ? true : undefined}
-        className={classNames(styles.combobox, { [styles.isDisabled]: isDisabled })}
+        className={classNames(styles.combobox, {
+          [styles.isDisabled]: isDisabled,
+        })}
         excludeFromTabOrder={isDisabled}
         isDisabled={isDisabled}
       >
-        {selectedLabel ?? placeholder ?? ''}
+        {selectedLabel ?? placeholder ?? ""}
       </AriaButton>
       <AriaModalOverlay className={styles.trayOverlay} isDismissable>
         <AriaModal className={styles.tray}>
           <AriaDialog className={styles.trayDialog}>
-            <AriaHeading className={styles.trayHeading} slot='title'>
+            <AriaHeading className={styles.trayHeading} slot="title">
               {label}
             </AriaHeading>
             <div className={styles.inputWrapper}>
@@ -158,31 +199,35 @@ export const MobileCombobox = ({
                 className={styles.input}
                 onChange={(event) => handleQueryChange(event.target.value)}
                 ref={inputRef}
-                role='searchbox'
-                type='text'
-                value={query}
+                role="searchbox"
+                type="text"
+                value={effectiveQuery}
                 {...(placeholder !== undefined && { placeholder })}
               />
-              {query.length > 0 && (
+              {effectiveQuery.length > 0 && (
                 <button
-                  aria-label='Clear'
+                  aria-label="Clear"
                   className={styles.clearButton}
                   onClick={() => {
-                    handleQueryChange('')
-                    inputRef.current?.focus()
+                    handleQueryChange("");
+                    inputRef.current?.focus();
                   }}
                   onMouseDown={(event) => event.preventDefault()}
-                  type='button'
+                  type="button"
                 >
                   <XmarkIcon />
                 </button>
               )}
             </div>
-            <div aria-live='polite' className={styles.visuallyHidden} role='status'>
+            <div
+              aria-live="polite"
+              className={styles.visuallyHidden}
+              role="status"
+            >
               {announcement}
             </div>
-            <div className={styles.listScroll}>
-              {totalCount === 0 ? (
+            <div className={styles.listScroll} ref={listScrollRef}>
+              {totalCount === 0 && !isLoading ? (
                 <div className={styles.emptyState}>No results</div>
               ) : (
                 filteredGroups.map((group, index) => (
@@ -194,6 +239,8 @@ export const MobileCombobox = ({
                   />
                 ))
               )}
+              {onLoadMore && <div aria-hidden="true" ref={sentinelRef} />}
+              {isLoading && <div className={styles.loadingState}>Loading…</div>}
             </div>
             {bottomLink && (
               <AriaLink
@@ -208,41 +255,46 @@ export const MobileCombobox = ({
         </AriaModal>
       </AriaModalOverlay>
     </AriaDialogTrigger>
-  )
-}
+  );
+};
 
-MobileCombobox.displayName = 'MobileCombobox'
+MobileCombobox.displayName = "MobileCombobox";
 
 const Group = ({
   group,
   onSelect,
   selectedId,
 }: {
-  group: ItemGroup
-  onSelect: (item: FlatItem) => void
-  selectedId: Key | null
+  group: ItemGroup;
+  onSelect: (item: FlatItem) => void;
+  selectedId: Key | null;
 }) => {
-  const headingId = useId()
+  const headingId = useId();
   const list = (
-    <ul aria-labelledby={group.title ? headingId : undefined} className={styles.list}>
+    <ul
+      aria-labelledby={group.title ? headingId : undefined}
+      className={styles.list}
+    >
       {group.items.map((item) => {
-        const isSelected = item.id === selectedId
+        const isSelected = item.id === selectedId;
         return (
           <li key={String(item.id)}>
             <button
-              className={classNames(styles.itemButton, { [styles.isSelected]: isSelected })}
+              className={classNames(styles.itemButton, {
+                [styles.isSelected]: isSelected,
+              })}
               onClick={() => onSelect(item)}
-              type='button'
+              type="button"
             >
               {item.label}
             </button>
           </li>
-        )
+        );
       })}
     </ul>
-  )
+  );
 
-  if (!group.title) return list
+  if (!group.title) return list;
   return (
     <>
       <h3 className={styles.sectionHeader} id={headingId}>
@@ -250,61 +302,83 @@ const Group = ({
       </h3>
       {list}
     </>
-  )
+  );
+};
+
+type LoadMoreInfo = { onLoadMore?: () => void; isLoading?: boolean };
+
+// Scan children for any element carrying onLoadMore prop — matches
+// ListBoxLoadMoreItem regardless of its internal displayName.
+function extractLoadMore(children: ReactNode): LoadMoreInfo {
+  let result: LoadMoreInfo = {};
+  Children.forEach(children, (child) => {
+    if (!isValidElement(child)) return;
+    const p = child.props as { onLoadMore?: () => void; isLoading?: boolean };
+    if (typeof p.onLoadMore === "function") {
+      result = { onLoadMore: p.onLoadMore, isLoading: p.isLoading };
+    }
+  });
+  return result;
 }
 
 // Walk Combobox children (ComboboxItem + ComboboxSection) and flatten them
 // into groups the mobile tray can render as ul/li/button. Sections are matched
 // via displayName to avoid a circular import on the desktop component.
 function extractGroups(children: ReactNode): ItemGroup[] {
-  const result: ItemGroup[] = []
-  let standalone: FlatItem[] = []
+  const result: ItemGroup[] = [];
+  let standalone: FlatItem[] = [];
 
   Children.forEach(children, (child) => {
-    if (!isValidElement(child)) return
-    const componentName = (child.type as { displayName?: string })?.displayName
+    if (!isValidElement(child)) return;
+    const componentName = (child.type as { displayName?: string })?.displayName;
 
-    if (componentName === 'ComboboxSection') {
+    if (componentName === "ComboboxSection") {
       if (standalone.length > 0) {
-        result.push({ items: standalone })
-        standalone = []
+        result.push({ items: standalone });
+        standalone = [];
       }
-      const sectionProps = child.props as { title: string; children?: ReactNode }
-      result.push({ title: sectionProps.title, items: extractItems(sectionProps.children) })
-      return
+      const sectionProps = child.props as {
+        title: string;
+        children?: ReactNode;
+      };
+      result.push({
+        title: sectionProps.title,
+        items: extractItems(sectionProps.children),
+      });
+      return;
     }
 
-    const item = readItem(child)
-    if (item) standalone.push(item)
-  })
+    const item = readItem(child);
+    if (item) standalone.push(item);
+  });
 
-  if (standalone.length > 0) result.push({ items: standalone })
-  return result
+  if (standalone.length > 0) result.push({ items: standalone });
+  return result;
 }
 
 function extractItems(children: ReactNode): FlatItem[] {
-  const items: FlatItem[] = []
+  const items: FlatItem[] = [];
   Children.forEach(children, (child) => {
-    if (!isValidElement(child)) return
-    const item = readItem(child)
-    if (item) items.push(item)
-  })
-  return items
+    if (!isValidElement(child)) return;
+    const item = readItem(child);
+    if (item) items.push(item);
+  });
+  return items;
 }
 
 function readItem(node: ReactElement): FlatItem | null {
   const props = node.props as {
-    id?: Key
-    children?: ReactNode
-    textValue?: string
-    onAction?: () => void
-  }
-  if (props.id == null) return null
+    id?: Key;
+    children?: ReactNode;
+    textValue?: string;
+    onAction?: () => void;
+  };
+  if (props.id == null) return null;
   const label =
-    typeof props.textValue === 'string'
+    typeof props.textValue === "string"
       ? props.textValue
-      : typeof props.children === 'string'
+      : typeof props.children === "string"
         ? props.children
-        : ''
-  return { id: props.id, label, onAction: props.onAction }
+        : "";
+  return { id: props.id, label, onAction: props.onAction };
 }
