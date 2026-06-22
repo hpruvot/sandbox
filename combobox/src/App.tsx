@@ -158,7 +158,7 @@ export const App = () => {
   );
 };
 
-const PAGE_SIZE = 50;
+const PAGE_SIZE = 10;
 
 const AsyncLongListDemo = () => {
   const list = useAsyncList<(typeof longOptions)[number], number>({
