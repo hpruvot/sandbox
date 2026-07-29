@@ -1,0 +1,241 @@
+.combobox {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 40px;
+  padding: 4px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #111827;
+  font: inherit;
+  font-size: 16px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.combobox.isDisabled {
+  cursor: not-allowed;
+  color: #9ca3af;
+  border-color: #e5e7eb;
+  background-color: #f3f4f6;
+}
+
+.placeholder {
+  color: #9ca3af;
+}
+
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+/* Backdrop — covers the viewport behind the tray. */
+.trayOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: rgba(15, 23, 42, 0.5);
+}
+
+/* Tray — bottom sheet. `dvh` so iOS Safari's keyboard doesn't push the
+   sheet off-screen the way `vh` would. */
+.tray {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  max-height: 70dvh;
+  height: 100%;
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 -4px 16px rgba(15, 23, 42, 0.16);
+  outline: none;
+  overflow: hidden;
+}
+
+.trayDialog {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100%;
+  max-height: inherit;
+  padding: 16px;
+  outline: none;
+}
+
+.trayHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.trayHeading {
+  margin: 0;
+  font-size: 1.25rem;
+  color: #111827;
+}
+
+.doneButton {
+  flex: none;
+  height: 32px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 6px;
+  background: #2563eb;
+  color: #ffffff;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.doneButton[data-hovered] {
+  background: #1d4ed8;
+}
+
+.doneButton[data-focus-visible] {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.pillList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Wrapper — positions the clear button on the right of the input.
+   We avoid `type="search"` (inconsistent native clear button) and ship
+   our own xmark inside this wrapper. */
+.inputWrapper {
+  position: relative;
+  width: 100%;
+  flex: none;
+}
+
+/* `padding-right` reserves room for the clear button so the caret never
+   collides with the icon. */
+.input {
+  width: 100%;
+  height: 40px;
+  padding: 4px 40px 4px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #111827;
+  font: inherit;
+  font-size: 16px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.input::placeholder {
+  color: #9ca3af;
+}
+
+.input:focus-visible {
+  border-color: #2563eb;
+}
+
+.clearButton {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  min-height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: #4b5563;
+  cursor: pointer;
+}
+
+.clearButton:hover {
+  background: #f3f4f6;
+}
+
+.listScroll {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.itemButton {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-bottom: 1px solid #f3f4f6;
+  background: transparent;
+  color: #111827;
+  font: inherit;
+  font-size: 16px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.itemButton:hover {
+  background: #eff6ff;
+}
+
+.itemButton:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: -2px;
+}
+
+.itemButton.isSelected {
+  font-weight: 600;
+}
+
+.itemButton.isSelected::after {
+  content: '✓';
+  color: #2563eb;
+}
+
+.sectionHeader {
+  margin: 0;
+  padding: 8px 12px 4px;
+  color: #6b7280;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  border: 0;
+  clip: rect(0, 0, 0, 0);
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.emptyState {
+  padding: 12px;
+  color: #6b7280;
+  font-size: 16px;
+}

@@ -1,0 +1,41 @@
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.label {
+  font-size: 16px;
+  font-weight: 500;
+  color: #1f2937;
+}
+
+.requirement {
+  color: #6b7280;
+  font-weight: 400;
+}
+
+.hint {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.message {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.messageError {
+  color: #e5004c;
+}
+
+.messageWarning {
+  color: #b45309;
+}
+
+.disabled .label,
+.disabled .hint {
+  color: #9ca3af;
+}
