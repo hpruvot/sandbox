@@ -93,6 +93,20 @@ export const MobileMultiComboBox = ({
     [filteredGroups],
   );
 
+  // Shared between the trigger and the tray's filter input via
+  // `aria-describedby` (same DOM id, different subtree — works fine, RAC's
+  // Modal portals but ids resolve document-wide). Read as part of the
+  // browser's own focus/name announcement, so it doesn't race the
+  // aria-live region the way a `focus()` call right after `setAnnouncement`
+  // would. Full list vs. count-only is still an open TEP question (#9) —
+  // full list picked here as the more informative default.
+  const selectionDescriptionId = useId();
+  const selectionDescription = useMemo(() => {
+    if (selectedKeys.length === 0) return undefined;
+    const labels = selectedKeys.map((key) => findOptionText(children, key) ?? String(key));
+    return `${selectedKeys.length} selected: ${labels.join(', ')}`;
+  }, [selectedKeys, children]);
+
   // Debounced so VoiceOver isn't spammed mid-typing — same reasoning as
   // the single-select MobileCombobox's filter announcement.
   useEffect(() => {
@@ -129,6 +143,12 @@ export const MobileMultiComboBox = ({
     setAnnouncement(
       `${item.label} ${isSelected ? "removed" : "added"}. ${next.length} selected.`,
     );
+    // Filtering is the dominant path for large option sets (dozens to
+    // thousands) — clearing the filter text and refocusing the input lets
+    // the user start typing the next pick immediately, back against the
+    // full list, instead of round-tripping back into a still-filtered one.
+    setQuery("");
+    inputRef.current?.focus();
   };
 
   const handlePillDelete = (key: Key) => {
@@ -149,8 +169,9 @@ export const MobileMultiComboBox = ({
     <AriaDialogTrigger isOpen={isOpen && !isDisabled} onOpenChange={setIsOpen}>
       <div className={styles.fieldGroup}>
         <AriaButton
+          aria-describedby={selectionDescription ? selectionDescriptionId : undefined}
           aria-hidden={isDisabled ? true : undefined}
-          aria-label={`${label}${selectedKeys.length > 0 ? `: ${selectedKeys.length} selected` : ""}`}
+          aria-label={label}
           className={classNames(styles.combobox, {
             [styles.isDisabled]: isDisabled,
           })}
@@ -160,6 +181,11 @@ export const MobileMultiComboBox = ({
         >
           <span className={styles.placeholder}>{placeholder ?? ""}</span>
         </AriaButton>
+        {selectionDescription && (
+          <span className={styles.visuallyHidden} id={selectionDescriptionId}>
+            {selectionDescription}
+          </span>
+        )}
         {/* Below the field, never inside it — pills embedded in the
             trigger were an explicitly rejected design (overlapping
             targets, reduced input target size). */}
@@ -207,6 +233,7 @@ export const MobileMultiComboBox = ({
             <div className={styles.inputWrapper}>
               {/* eslint-disable-next-line jsx-a11y/no-autofocus */}
               <input
+                aria-describedby={selectionDescription ? selectionDescriptionId : undefined}
                 aria-label={`Filter ${label}`}
                 autoFocus
                 className={styles.input}
